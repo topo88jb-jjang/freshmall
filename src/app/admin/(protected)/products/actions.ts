@@ -16,6 +16,12 @@ function slugify(name: string) {
   return "p-" + randomUUID().replace(/-/g, "").slice(0, 12);
 }
 
+export type ProductOptionInput = {
+  label: string;
+  price: number;
+  stock: number;
+};
+
 export type ProductFormInput = {
   name: string;
   categoryId: string;
@@ -29,27 +35,57 @@ export type ProductFormInput = {
   detailImageUrls: string[];
   isActive: boolean;
   isFeatured: boolean;
+  options: ProductOptionInput[]; // 비어있으면 "단품" 상품 (옵션 선택 없이 기본 가격/재고 사용)
 };
+
+const MAX_OPTIONS = 12;
+
+async function saveOptions(admin: ReturnType<typeof supabaseAdmin>, productId: string, options: ProductOptionInput[]) {
+  // 기존 옵션 전체 삭제 후 새로 저장 (최대 12개까지만)
+  const { error: delError } = await admin.from("product_options").delete().eq("product_id", productId);
+  if (delError) throw new Error("옵션 저장에 실패했습니다: " + delError.message);
+
+  const trimmed = options.filter((o) => o.label.trim()).slice(0, MAX_OPTIONS);
+  if (trimmed.length === 0) return;
+
+  const payload = trimmed.map((o, idx) => ({
+    product_id: productId,
+    label: o.label.trim(),
+    price: o.price,
+    stock: o.stock,
+    sort_order: idx,
+  }));
+
+  const { error } = await admin.from("product_options").insert(payload);
+  if (error) throw new Error("옵션 저장에 실패했습니다: " + error.message);
+}
 
 export async function createProduct(input: ProductFormInput) {
   assertAuthed();
   const admin = supabaseAdmin();
-  const { error } = await admin.from("products").insert({
-    category_id: input.categoryId || null,
-    name: input.name,
-    slug: slugify(input.name),
-    description: input.description,
-    origin: input.origin,
-    unit_label: input.unitLabel,
-    price: input.price,
-    discount_price: input.discountPrice,
-    stock: input.stock,
-    image_url: input.imageUrl,
-    detail_image_urls: input.detailImageUrls,
-    is_active: input.isActive,
-    is_featured: input.isFeatured,
-  });
-  if (error) throw new Error(error.message);
+  const { data, error } = await admin
+    .from("products")
+    .insert({
+      category_id: input.categoryId || null,
+      name: input.name,
+      slug: slugify(input.name),
+      description: input.description,
+      origin: input.origin,
+      unit_label: input.unitLabel,
+      price: input.price,
+      discount_price: input.discountPrice,
+      stock: input.stock,
+      image_url: input.imageUrl,
+      detail_image_urls: input.detailImageUrls,
+      is_active: input.isActive,
+      is_featured: input.isFeatured,
+    })
+    .select()
+    .single();
+  if (error || !data) throw new Error(error?.message ?? "상품 저장에 실패했습니다.");
+
+  await saveOptions(admin, data.id, input.options);
+
   revalidatePath("/admin/products");
   revalidatePath("/products");
   redirect("/admin/products");
@@ -76,6 +112,9 @@ export async function updateProduct(id: string, input: ProductFormInput) {
     })
     .eq("id", id);
   if (error) throw new Error(error.message);
+
+  await saveOptions(admin, id, input.options);
+
   revalidatePath("/admin/products");
   revalidatePath("/products");
   redirect("/admin/products");

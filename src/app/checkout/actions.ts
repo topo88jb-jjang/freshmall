@@ -48,7 +48,7 @@ export async function createOrder(input: CreateOrderInput) {
   const itemsPayload = input.items.map((i) => ({
     order_id: orderId,
     product_id: i.productId,
-    product_name: i.name,
+    product_name: i.optionLabel ? `${i.name} - ${i.optionLabel}` : i.name,
     price: i.price,
     quantity: i.quantity,
   }));

@@ -10,13 +10,17 @@ import {
 } from "react";
 import { CartItem } from "@/lib/types";
 
-const STORAGE_KEY = "freshmall_cart_v1";
+const STORAGE_KEY = "freshmall_cart_v2";
+
+function sameLine(a: CartItem, b: { productId: string; optionId: string | null }) {
+  return a.productId === b.productId && a.optionId === b.optionId;
+}
 
 type CartContextType = {
   items: CartItem[];
   addItem: (item: CartItem) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
-  removeItem: (productId: string) => void;
+  updateQuantity: (productId: string, optionId: string | null, quantity: number) => void;
+  removeItem: (productId: string, optionId: string | null) => void;
   clear: () => void;
   totalCount: number;
   totalPrice: number;
@@ -45,25 +49,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addItem = (item: CartItem) => {
     setItems((prev) => {
-      const existing = prev.find((p) => p.productId === item.productId);
+      const existing = prev.find((p) => sameLine(p, item));
       if (existing) {
-        const nextQty = Math.min(
-          existing.quantity + item.quantity,
-          item.stock
-        );
-        return prev.map((p) =>
-          p.productId === item.productId ? { ...p, quantity: nextQty } : p
-        );
+        const nextQty = Math.min(existing.quantity + item.quantity, item.stock);
+        return prev.map((p) => (sameLine(p, item) ? { ...p, quantity: nextQty } : p));
       }
       return [...prev, item];
     });
   };
 
-  const updateQuantity = (productId: string, quantity: number) => {
+  const updateQuantity = (productId: string, optionId: string | null, quantity: number) => {
     setItems((prev) =>
       prev
         .map((p) =>
-          p.productId === productId
+          sameLine(p, { productId, optionId })
             ? { ...p, quantity: Math.max(1, Math.min(quantity, p.stock)) }
             : p
         )
@@ -71,8 +70,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
   };
 
-  const removeItem = (productId: string) => {
-    setItems((prev) => prev.filter((p) => p.productId !== productId));
+  const removeItem = (productId: string, optionId: string | null) => {
+    setItems((prev) => prev.filter((p) => !sameLine(p, { productId, optionId })));
   };
 
   const clear = () => setItems([]);

@@ -3,16 +3,20 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Category, Product } from "@/lib/types";
-import { createProduct, updateProduct, ProductFormInput } from "./actions";
+import { Category, Product, ProductOption } from "@/lib/types";
+import { createProduct, updateProduct, ProductFormInput, ProductOptionInput } from "./actions";
 import { uploadProductImage } from "./upload-actions";
+
+const MAX_OPTIONS = 12;
 
 export default function ProductForm({
   categories,
   product,
+  existingOptions,
 }: {
   categories: Category[];
   product?: Product;
+  existingOptions?: ProductOption[];
 }) {
   const router = useRouter();
   const [form, setForm] = useState({
@@ -30,6 +34,13 @@ export default function ProductForm({
   const [thumbnailUrl, setThumbnailUrl] = useState(product?.image_url ?? "");
   const [detailImageUrls, setDetailImageUrls] = useState<string[]>(
     product?.detail_image_urls ?? []
+  );
+  const [options, setOptions] = useState<ProductOptionInput[]>(
+    (existingOptions ?? []).map((o) => ({
+      label: o.label,
+      price: o.price,
+      stock: o.stock,
+    }))
   );
   const [thumbUploading, setThumbUploading] = useState(false);
   const [detailUploading, setDetailUploading] = useState(false);
@@ -81,6 +92,20 @@ export default function ProductForm({
     setDetailImageUrls((prev) => prev.filter((u) => u !== url));
   };
 
+  const addOption = () => {
+    setOptions((prev) =>
+      prev.length >= MAX_OPTIONS ? prev : [...prev, { label: "", price: 0, stock: 0 }]
+    );
+  };
+
+  const updateOption = (index: number, patch: Partial<ProductOptionInput>) => {
+    setOptions((prev) => prev.map((o, i) => (i === index ? { ...o, ...patch } : o)));
+  };
+
+  const removeOption = (index: number) => {
+    setOptions((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -88,6 +113,13 @@ export default function ProductForm({
 
     if (!thumbnailUrl) {
       setError("썸네일 이미지를 업로드해주세요.");
+      setSubmitting(false);
+      return;
+    }
+
+    const validOptions = options.filter((o) => o.label.trim());
+    if (options.some((o) => o.label.trim() && (!o.price || o.price <= 0))) {
+      setError("옵션 가격은 0보다 커야 합니다.");
       setSubmitting(false);
       return;
     }
@@ -105,6 +137,7 @@ export default function ProductForm({
       detailImageUrls,
       isActive: form.isActive,
       isFeatured: form.isFeatured,
+      options: validOptions,
     };
     try {
       if (product) {
@@ -217,7 +250,7 @@ export default function ProductForm({
         </Row>
       </div>
       <div className="grid grid-cols-3 gap-3">
-        <Row label="정가 *">
+        <Row label="기본 정가 *">
           <input
             required
             type="number"
@@ -227,7 +260,7 @@ export default function ProductForm({
             className="input"
           />
         </Row>
-        <Row label="할인가">
+        <Row label="기본 할인가">
           <input
             type="number"
             min={0}
@@ -236,7 +269,7 @@ export default function ProductForm({
             className="input"
           />
         </Row>
-        <Row label="재고 *">
+        <Row label="기본 재고 *">
           <input
             required
             type="number"
@@ -247,6 +280,58 @@ export default function ProductForm({
           />
         </Row>
       </div>
+      <p className="text-xs text-ink/40 -mt-2">
+        아래에 구매 옵션을 추가하면, 고객은 기본 가격 대신 옵션 중 하나를 선택해서 구매하게
+        됩니다. 옵션을 하나도 안 만들면 지금처럼 단품으로 판매돼요.
+      </p>
+
+      <Row label={`구매 옵션 (선택, 최대 ${MAX_OPTIONS}개) — 예: "1kg 1박스", "3kg 1박스"`}>
+        <div className="space-y-2">
+          {options.map((opt, idx) => (
+            <div key={idx} className="flex gap-2 items-center">
+              <input
+                placeholder="옵션명 (예: 3kg 1박스)"
+                value={opt.label}
+                onChange={(e) => updateOption(idx, { label: e.target.value })}
+                className="input flex-[2]"
+              />
+              <input
+                type="number"
+                min={0}
+                placeholder="가격"
+                value={opt.price || ""}
+                onChange={(e) => updateOption(idx, { price: Number(e.target.value) })}
+                className="input flex-1"
+              />
+              <input
+                type="number"
+                min={0}
+                placeholder="재고"
+                value={opt.stock || ""}
+                onChange={(e) => updateOption(idx, { stock: Number(e.target.value) })}
+                className="input flex-1"
+              />
+              <button
+                type="button"
+                onClick={() => removeOption(idx)}
+                className="w-8 h-8 shrink-0 rounded-md border border-ink/15 text-ink/50 hover:text-tomato hover:border-tomato"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+          {options.length < MAX_OPTIONS && (
+            <button
+              type="button"
+              onClick={addOption}
+              className="text-sm text-forest hover:text-ink underline underline-offset-2"
+            >
+              + 옵션 추가 ({options.length}/{MAX_OPTIONS})
+            </button>
+          )}
+        </div>
+      </Row>
+
       <Row label="상품 설명">
         <textarea
           rows={4}

@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { supabasePublic } from "@/lib/supabase";
-import { Product, formatWon } from "@/lib/types";
+import { Product, ProductOption, formatWon } from "@/lib/types";
 import AddToCartBox from "@/components/AddToCartBox";
 
 export const revalidate = 0;
@@ -22,6 +22,15 @@ export default async function ProductDetailPage({
 
   const p = product as Product;
   const hasDiscount = !!p.discount_price;
+
+  const { data: options } = await supabasePublic
+    .from("product_options")
+    .select("*")
+    .eq("product_id", p.id)
+    .order("sort_order")
+    .returns<ProductOption[]>();
+
+  const hasOptions = (options ?? []).length > 0;
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-10 grid md:grid-cols-2 gap-12">
@@ -45,26 +54,28 @@ export default async function ProductDetailPage({
         </h1>
         <p className="mt-2 text-ink/50 text-sm">{p.unit_label} 기준</p>
 
-        <div className="mt-5 flex items-baseline gap-3">
-          {hasDiscount && (
-            <span className="text-ink/40 line-through price-display">
-              {formatWon(p.price)}
+        {!hasOptions && (
+          <div className="mt-5 flex items-baseline gap-3">
+            {hasDiscount && (
+              <span className="text-ink/40 line-through price-display">
+                {formatWon(p.price)}
+              </span>
+            )}
+            <span
+              className="price-display text-3xl text-ink"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              {formatWon(p.discount_price ?? p.price)}
             </span>
-          )}
-          <span
-            className="price-display text-3xl text-ink"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            {formatWon(p.discount_price ?? p.price)}
-          </span>
-        </div>
+          </div>
+        )}
 
         <p className="mt-6 text-ink/70 leading-relaxed whitespace-pre-line">
           {p.description}
         </p>
 
         <div className="mt-8">
-          <AddToCartBox product={p} />
+          <AddToCartBox product={p} options={options ?? []} />
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 import { supabasePublic } from "@/lib/supabase";
-import { Category, Product } from "@/lib/types";
+import { Category, Product, ProductOption } from "@/lib/types";
 import ProductCard from "@/components/ProductCard";
 import Link from "next/link";
 
@@ -29,6 +29,23 @@ export default async function ProductsPage({
   }
 
   const { data: products } = await query;
+
+  const productIds = (products ?? []).map((p: Product) => p.id);
+  const { data: allOptions } = productIds.length
+    ? await supabasePublic
+        .from("product_options")
+        .select("*")
+        .in("product_id", productIds)
+        .order("sort_order")
+        .returns<ProductOption[]>()
+    : { data: [] as ProductOption[] };
+
+  const optionsByProduct = new Map<string, ProductOption[]>();
+  for (const o of allOptions ?? []) {
+    const list = optionsByProduct.get(o.product_id) ?? [];
+    list.push(o);
+    optionsByProduct.set(o.product_id, list);
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
@@ -62,7 +79,7 @@ export default async function ProductsPage({
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-x-5 gap-y-10">
         {(products ?? []).map((p: Product) => (
-          <ProductCard key={p.id} product={p} />
+          <ProductCard key={p.id} product={p} options={optionsByProduct.get(p.id) ?? []} />
         ))}
         {products && products.length === 0 && (
           <p className="col-span-full text-ink/40 text-sm">

@@ -23,6 +23,15 @@ export type Product = {
   created_at: string;
 };
 
+export type ProductOption = {
+  id: string;
+  product_id: string;
+  label: string;
+  price: number;
+  stock: number;
+  sort_order: number;
+};
+
 export type OrderStatus =
   | "pending"
   | "paid"
@@ -71,6 +80,8 @@ export type CartItem = {
   imageUrl: string;
   quantity: number;
   stock: number;
+  optionId: string | null;
+  optionLabel: string | null;
 };
 
 export function formatWon(amount: number) {

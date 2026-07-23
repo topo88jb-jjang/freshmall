@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { supabasePublic } from "@/lib/supabase";
-import { Category, Product } from "@/lib/types";
+import { Category, Product, ProductOption } from "@/lib/types";
 import ProductCard from "@/components/ProductCard";
 
 export const revalidate = 0;
@@ -23,6 +23,23 @@ export default async function HomePage() {
         .eq("is_active", true)
         .order("created_at", { ascending: false }),
     ]);
+
+  const featuredIds = (featured ?? []).map((p: Product) => p.id);
+  const { data: featuredOptions } = featuredIds.length
+    ? await supabasePublic
+        .from("product_options")
+        .select("*")
+        .in("product_id", featuredIds)
+        .order("sort_order")
+        .returns<ProductOption[]>()
+    : { data: [] as ProductOption[] };
+
+  const optionsByProduct = new Map<string, ProductOption[]>();
+  for (const o of featuredOptions ?? []) {
+    const list = optionsByProduct.get(o.product_id) ?? [];
+    list.push(o);
+    optionsByProduct.set(o.product_id, list);
+  }
 
   // 카테고리별 대표 이미지: 해당 카테고리의 가장 최근 등록된 판매중 상품 사진을 사용합니다.
   const categoryThumbnail = new Map<string, string>();
@@ -107,7 +124,7 @@ export default async function HomePage() {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-x-5 gap-y-10">
           {(featured ?? []).map((p: Product) => (
-            <ProductCard key={p.id} product={p} />
+            <ProductCard key={p.id} product={p} options={optionsByProduct.get(p.id) ?? []} />
           ))}
           {(!featured || featured.length === 0) && (
             <p className="col-span-full text-ink/40 text-sm">

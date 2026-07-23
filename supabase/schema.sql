@@ -110,3 +110,20 @@ alter table products add column if not exists detail_image_urls text[] not null 
 insert into storage.buckets (id, name, public)
 values ('product-images', 'product-images', true)
 on conflict (id) do nothing;
+
+-- (신규 설치 시 최신 스키마 반영: 상품 구매 옵션)
+create table if not exists product_options (
+  id uuid primary key default gen_random_uuid(),
+  product_id uuid not null references products(id) on delete cascade,
+  label text not null,
+  price integer not null,
+  stock integer not null default 0,
+  sort_order int not null default 0
+);
+
+alter table product_options enable row level security;
+
+do $$ begin
+  create policy "public read product_options" on product_options for select using (true);
+exception when duplicate_object then null;
+end $$;

@@ -2,14 +2,24 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Product, formatWon } from "@/lib/types";
+import { Product, ProductOption, formatWon } from "@/lib/types";
 import { useCart } from "@/context/CartContext";
 
-export default function ProductCard({ product }: { product: Product }) {
+export default function ProductCard({
+  product,
+  options = [],
+}: {
+  product: Product;
+  options?: ProductOption[];
+}) {
   const { addItem } = useCart();
+  const hasOptions = options.length > 0;
   const finalPrice = product.discount_price ?? product.price;
   const hasDiscount = !!product.discount_price;
-  const soldOut = product.stock <= 0;
+  const soldOut = hasOptions
+    ? options.every((o) => o.stock <= 0)
+    : product.stock <= 0;
+  const minOptionPrice = hasOptions ? Math.min(...options.map((o) => o.price)) : null;
 
   return (
     <div className="group flex flex-col">
@@ -52,37 +62,59 @@ export default function ProductCard({ product }: { product: Product }) {
         <p className="text-xs text-ink/50">{product.unit_label}</p>
 
         <div className="flex items-baseline gap-2 pt-1">
-          {hasDiscount && (
-            <span className="text-xs text-ink/40 line-through price-display">
-              {formatWon(product.price)}
+          {hasOptions ? (
+            <span
+              className="price-display text-lg text-ink"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              {formatWon(minOptionPrice!)}~
             </span>
+          ) : (
+            <>
+              {hasDiscount && (
+                <span className="text-xs text-ink/40 line-through price-display">
+                  {formatWon(product.price)}
+                </span>
+              )}
+              <span
+                className="price-display text-lg text-ink"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                {formatWon(finalPrice)}
+              </span>
+            </>
           )}
-          <span
-            className="price-display text-lg text-ink"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            {formatWon(finalPrice)}
-          </span>
         </div>
       </div>
 
-      <button
-        disabled={soldOut}
-        onClick={() =>
-          addItem({
-            productId: product.id,
-            name: product.name,
-            price: finalPrice,
-            unitLabel: product.unit_label,
-            imageUrl: product.image_url,
-            quantity: 1,
-            stock: product.stock,
-          })
-        }
-        className="mt-3 w-full py-2 text-sm rounded-md border border-ink/15 hover:border-forest hover:bg-forest hover:text-cream transition-colors disabled:opacity-40 disabled:pointer-events-none"
-      >
-        장바구니 담기
-      </button>
+      {hasOptions ? (
+        <Link
+          href={`/products/${product.slug}`}
+          className="mt-3 w-full py-2 text-sm rounded-md border border-ink/15 hover:border-forest hover:bg-forest hover:text-cream transition-colors text-center block"
+        >
+          옵션 선택하기
+        </Link>
+      ) : (
+        <button
+          disabled={soldOut}
+          onClick={() =>
+            addItem({
+              productId: product.id,
+              name: product.name,
+              price: finalPrice,
+              unitLabel: product.unit_label,
+              imageUrl: product.image_url,
+              quantity: 1,
+              stock: product.stock,
+              optionId: null,
+              optionLabel: null,
+            })
+          }
+          className="mt-3 w-full py-2 text-sm rounded-md border border-ink/15 hover:border-forest hover:bg-forest hover:text-cream transition-colors disabled:opacity-40 disabled:pointer-events-none"
+        >
+          장바구니 담기
+        </button>
+      )}
     </div>
   );
 }

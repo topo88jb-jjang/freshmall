@@ -27,7 +27,9 @@ export async function sendAdminOrderEmail(input: OrderEmailInput) {
     .map(
       (i) =>
         `<tr>
-          <td style="padding:6px 10px;border-bottom:1px solid #eee;">${escapeHtml(i.name)}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #eee;">${escapeHtml(
+            i.optionLabel ? `${i.name} - ${i.optionLabel}` : i.name
+          )}</td>
           <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:center;">${i.quantity}</td>
           <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:right;">${(i.price * i.quantity).toLocaleString(
             "ko-KR"

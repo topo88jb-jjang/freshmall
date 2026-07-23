@@ -30,7 +30,7 @@ export default function CartPage() {
 
       <div className="divide-y divide-ink/10 border-y border-ink/10">
         {items.map((item) => (
-          <div key={item.productId} className="py-5 flex gap-4 items-center">
+          <div key={`${item.productId}-${item.optionId ?? "base"}`} className="py-5 flex gap-4 items-center">
             <div className="relative w-20 h-20 rounded-md overflow-hidden bg-stone/40 shrink-0">
               {item.imageUrl && (
                 <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
@@ -38,25 +38,27 @@ export default function CartPage() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-ink truncate">{item.name}</p>
-              <p className="text-xs text-ink/40 mt-1">{item.unitLabel}</p>
+              <p className="text-xs text-ink/40 mt-1">
+                {item.optionLabel ?? item.unitLabel}
+              </p>
               <div className="mt-2 flex items-center gap-2">
                 <div className="flex items-center border border-ink/15 rounded-md">
                   <button
                     className="w-7 h-7 text-ink/60 hover:text-tomato"
-                    onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                    onClick={() => updateQuantity(item.productId, item.optionId, item.quantity - 1)}
                   >
                     −
                   </button>
                   <span className="w-8 text-center text-sm price-display">{item.quantity}</span>
                   <button
                     className="w-7 h-7 text-ink/60 hover:text-tomato"
-                    onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                    onClick={() => updateQuantity(item.productId, item.optionId, item.quantity + 1)}
                   >
                     +
                   </button>
                 </div>
                 <button
-                  onClick={() => removeItem(item.productId)}
+                  onClick={() => removeItem(item.productId, item.optionId)}
                   className="text-xs text-ink/40 hover:text-tomato underline underline-offset-2"
                 >
                   삭제
