@@ -128,3 +128,11 @@ do $$ begin
   create policy "public read product_options" on product_options for select using (true);
 exception when duplicate_object then null;
 end $$;
+
+-- (신규 설치 시 최신 스키마 반영: 브라우저에서 이미지 직접 업로드 허용)
+do $$ begin
+  create policy "public insert product-images" on storage.objects
+  for insert
+  with check (bucket_id = 'product-images');
+exception when duplicate_object then null;
+end $$;

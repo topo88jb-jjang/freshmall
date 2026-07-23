@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Category, Product, ProductOption } from "@/lib/types";
 import { createProduct, updateProduct, ProductFormInput, ProductOptionInput } from "./actions";
-import { uploadProductImage } from "./upload-actions";
+import { uploadProductImageClient } from "@/lib/upload-client";
 
 const MAX_OPTIONS = 12;
 
@@ -57,10 +57,8 @@ export default function ProductForm({
     setThumbUploading(true);
     setError("");
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const result = await uploadProductImage(fd);
-      setThumbnailUrl(result.url);
+      const url = await uploadProductImageClient(file);
+      setThumbnailUrl(url);
     } catch (err: any) {
       setError(err.message ?? "썸네일 업로드에 실패했습니다.");
     } finally {
@@ -76,10 +74,8 @@ export default function ProductForm({
     setError("");
     try {
       for (const file of files) {
-        const fd = new FormData();
-        fd.append("file", file);
-        const result = await uploadProductImage(fd);
-        setDetailImageUrls((prev) => [...prev, result.url]);
+        const url = await uploadProductImageClient(file);
+        setDetailImageUrls((prev) => [...prev, url]);
       }
     } catch (err: any) {
       setError(err.message ?? "상세 이미지 업로드에 실패했습니다.");
