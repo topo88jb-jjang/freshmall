@@ -28,6 +28,7 @@ export type ProductOption = {
   product_id: string;
   label: string;
   price: number;
+  discount_price: number | null;
   stock: number;
   sort_order: number;
 };

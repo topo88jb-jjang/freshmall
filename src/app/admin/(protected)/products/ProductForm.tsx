@@ -39,6 +39,7 @@ export default function ProductForm({
     (existingOptions ?? []).map((o) => ({
       label: o.label,
       price: o.price,
+      discountPrice: o.discount_price,
       stock: o.stock,
     }))
   );
@@ -94,7 +95,9 @@ export default function ProductForm({
 
   const addOption = () => {
     setOptions((prev) =>
-      prev.length >= MAX_OPTIONS ? prev : [...prev, { label: "", price: 0, stock: 0 }]
+      prev.length >= MAX_OPTIONS
+        ? prev
+        : [...prev, { label: "", price: 0, discountPrice: null, stock: 0 }]
     );
   };
 
@@ -119,7 +122,16 @@ export default function ProductForm({
 
     const validOptions = options.filter((o) => o.label.trim());
     if (options.some((o) => o.label.trim() && (!o.price || o.price <= 0))) {
-      setError("옵션 가격은 0보다 커야 합니다.");
+      setError("옵션 정상판매가는 0보다 커야 합니다.");
+      setSubmitting(false);
+      return;
+    }
+    if (
+      options.some(
+        (o) => o.label.trim() && o.discountPrice != null && o.discountPrice >= o.price
+      )
+    ) {
+      setError("옵션 할인판매가는 정상판매가보다 낮아야 합니다.");
       setSubmitting(false);
       return;
     }
@@ -286,38 +298,63 @@ export default function ProductForm({
       </p>
 
       <Row label={`구매 옵션 (선택, 최대 ${MAX_OPTIONS}개) — 예: "1kg 1박스", "3kg 1박스"`}>
-        <div className="space-y-2">
+        <div className="space-y-3">
           {options.map((opt, idx) => (
-            <div key={idx} className="flex gap-2 items-center">
-              <input
-                placeholder="옵션명 (예: 3kg 1박스)"
-                value={opt.label}
-                onChange={(e) => updateOption(idx, { label: e.target.value })}
-                className="input flex-[2]"
-              />
-              <input
-                type="number"
-                min={0}
-                placeholder="가격"
-                value={opt.price || ""}
-                onChange={(e) => updateOption(idx, { price: Number(e.target.value) })}
-                className="input flex-1"
-              />
-              <input
-                type="number"
-                min={0}
-                placeholder="재고"
-                value={opt.stock || ""}
-                onChange={(e) => updateOption(idx, { stock: Number(e.target.value) })}
-                className="input flex-1"
-              />
-              <button
-                type="button"
-                onClick={() => removeOption(idx)}
-                className="w-8 h-8 shrink-0 rounded-md border border-ink/15 text-ink/50 hover:text-tomato hover:border-tomato"
-              >
-                ×
-              </button>
+            <div key={idx} className="border border-ink/10 rounded-md p-3 space-y-2">
+              <div className="flex gap-2 items-center">
+                <input
+                  placeholder="옵션명 (예: 3kg 1박스)"
+                  value={opt.label}
+                  onChange={(e) => updateOption(idx, { label: e.target.value })}
+                  className="input flex-1"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeOption(idx)}
+                  className="w-8 h-8 shrink-0 rounded-md border border-ink/15 text-ink/50 hover:text-tomato hover:border-tomato"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <span className="block text-[11px] text-ink/40 mb-1">정상판매가 *</span>
+                  <input
+                    type="number"
+                    min={0}
+                    placeholder="30000"
+                    value={opt.price || ""}
+                    onChange={(e) => updateOption(idx, { price: Number(e.target.value) })}
+                    className="input"
+                  />
+                </div>
+                <div>
+                  <span className="block text-[11px] text-ink/40 mb-1">할인판매가 (선택)</span>
+                  <input
+                    type="number"
+                    min={0}
+                    placeholder="15000"
+                    value={opt.discountPrice ?? ""}
+                    onChange={(e) =>
+                      updateOption(idx, {
+                        discountPrice: e.target.value ? Number(e.target.value) : null,
+                      })
+                    }
+                    className="input"
+                  />
+                </div>
+                <div>
+                  <span className="block text-[11px] text-ink/40 mb-1">재고 *</span>
+                  <input
+                    type="number"
+                    min={0}
+                    placeholder="30"
+                    value={opt.stock || ""}
+                    onChange={(e) => updateOption(idx, { stock: Number(e.target.value) })}
+                    className="input"
+                  />
+                </div>
+              </div>
             </div>
           ))}
           {options.length < MAX_OPTIONS && (

@@ -19,7 +19,9 @@ export default function ProductCard({
   const soldOut = hasOptions
     ? options.every((o) => o.stock <= 0)
     : product.stock <= 0;
-  const minOptionPrice = hasOptions ? Math.min(...options.map((o) => o.price)) : null;
+  const minOptionPrice = hasOptions
+    ? Math.min(...options.map((o) => o.discount_price ?? o.price))
+    : null;
 
   return (
     <div className="group flex flex-col">

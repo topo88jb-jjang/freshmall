@@ -19,6 +19,7 @@ function slugify(name: string) {
 export type ProductOptionInput = {
   label: string;
   price: number;
+  discountPrice: number | null;
   stock: number;
 };
 
@@ -52,6 +53,7 @@ async function saveOptions(admin: ReturnType<typeof supabaseAdmin>, productId: s
     product_id: productId,
     label: o.label.trim(),
     price: o.price,
+    discount_price: o.discountPrice,
     stock: o.stock,
     sort_order: idx,
   }));

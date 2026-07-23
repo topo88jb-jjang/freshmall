@@ -117,6 +117,7 @@ create table if not exists product_options (
   product_id uuid not null references products(id) on delete cascade,
   label text not null,
   price integer not null,
+  discount_price integer,
   stock integer not null default 0,
   sort_order int not null default 0
 );

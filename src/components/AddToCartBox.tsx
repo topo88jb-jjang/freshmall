@@ -25,7 +25,9 @@ export default function AddToCartBox({
     ? options.find((o) => o.id === selectedOptionId) ?? options[0]
     : null;
 
-  const finalPrice = hasOptions ? selectedOption!.price : product.discount_price ?? product.price;
+  const finalPrice = hasOptions
+    ? selectedOption!.discount_price ?? selectedOption!.price
+    : product.discount_price ?? product.price;
   const stock = hasOptions ? selectedOption!.stock : product.stock;
   const soldOut = stock <= 0;
 
@@ -53,6 +55,8 @@ export default function AddToCartBox({
             {options.map((o) => {
               const optionSoldOut = o.stock <= 0;
               const selected = selectedOptionId === o.id;
+              const optionHasDiscount = o.discount_price != null;
+              const optionSellPrice = o.discount_price ?? o.price;
               return (
                 <button
                   key={o.id}
@@ -72,7 +76,14 @@ export default function AddToCartBox({
                     {o.label}
                     {optionSoldOut && <span className="ml-2 text-tomato text-xs">품절</span>}
                   </span>
-                  <span className="price-display">{formatWon(o.price)}</span>
+                  <span className="flex items-baseline gap-2">
+                    {optionHasDiscount && (
+                      <span className="text-xs text-ink/40 line-through price-display">
+                        {formatWon(o.price)}
+                      </span>
+                    )}
+                    <span className="price-display">{formatWon(optionSellPrice)}</span>
+                  </span>
                 </button>
               );
             })}
@@ -104,12 +115,19 @@ export default function AddToCartBox({
 
       <div className="flex items-baseline justify-between border-t border-ink/10 pt-4">
         <span className="text-sm text-ink/60">총 금액</span>
-        <span
-          className="price-display text-2xl text-ink"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          {formatWon(finalPrice * qty)}
-        </span>
+        <div className="text-right">
+          {hasOptions && selectedOption!.discount_price != null && (
+            <p className="text-xs text-ink/40 line-through price-display">
+              {formatWon(selectedOption!.price * qty)}
+            </p>
+          )}
+          <span
+            className="price-display text-2xl text-ink"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            {formatWon(finalPrice * qty)}
+          </span>
+        </div>
       </div>
 
       <div className="flex gap-3">
