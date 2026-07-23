@@ -59,10 +59,10 @@ export default async function OrderCompletePage({
 
       <div className="mt-6 bg-stone/30 rounded-md p-5 text-sm text-ink/70 leading-relaxed">
         <p className="text-ink mb-1 font-medium">입금 계좌 안내</p>
-        입금 은행 카카오뱅크 3333-0764-36129 (예금주 이유진)
+        입금 은행 000은행 000-0000-000000 (예금주 프레시마켓)
         <br />
         입금 확인 후 순차적으로 배송이 시작되며, 진행 상황은 [주문조회] 메뉴에서
-        주문시 입력하신 연락처로 확인하실 수 있습니다.
+        주문번호와 연락처로 확인하실 수 있습니다.
       </div>
 
       <div className="mt-8 flex gap-3 justify-center">
